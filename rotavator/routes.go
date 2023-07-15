@@ -1,0 +1,3 @@
+package rotavator
+
+func Routes() {}
