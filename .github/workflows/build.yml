@@ -23,11 +23,13 @@ jobs:
 
       - name: Diagnostics
         run: |
-          echo "current directory ${pwd}"
+          echo "current directory $(pwd)"
           ls -la
 
       - name: Build
+        working-directory: src
         run: go build -v ./...
 
       - name: Test
+        working-directory: src
         run: go test -v ./...
