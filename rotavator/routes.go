@@ -1,3 +1,0 @@
-package rotavator
-
-func Routes() {}

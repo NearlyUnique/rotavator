@@ -38,7 +38,7 @@ sequenceDiagram
         user->>login_page: submit email
         login_page->>DB: check registered user
         opt not registered
-            login_page-->>user: return holding page
+            login_page-->>user: redirect to holding page
         end
         alt already logged in
             login_page->>DB: extend cookie
@@ -47,7 +47,7 @@ sequenceDiagram
             login_page->>login_page: generate random token
             login_page->>DB: store token
             login_page->>SMTP: send token
-            login_page-->>user: return holding page
+            login_page-->>user: redirect to holding page
         end
     end
 

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"awesomeProject/rotavator"
+	"rotorvator/rotavator"
 )
 
 func Test_random_text_can_be_generated(t *testing.T) {
