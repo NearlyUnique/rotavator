@@ -3,7 +3,6 @@ module rotavator
 go 1.20
 
 require (
-	github.com/NearlyUnique/httptestclient v0.0.0-20230803200402-52c1130d62f0
 	github.com/gobuffalo/plush v3.8.3+incompatible
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/securecookie v1.1.1
@@ -11,6 +10,7 @@ require (
 )
 
 require (
+	github.com/NearlyUnique/httptestclient v0.0.0-20230803200402-52c1130d62f0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
