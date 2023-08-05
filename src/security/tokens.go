@@ -1,4 +1,4 @@
-package rotavator
+package security
 
 import (
 	"crypto/rand"

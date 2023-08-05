@@ -1,16 +1,16 @@
-package rotavator_test
+package security_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"rotavator/rotavator"
+	"rotavator/security"
 )
 
 func Test_random_text_can_be_generated(t *testing.T) {
 	const length = 100
-	value, err := rotavator.RandomStr("Ab3", length)
+	value, err := security.RandomStr("Ab3", length)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -25,6 +25,6 @@ func Test_random_text_can_be_generated(t *testing.T) {
 	}
 }
 func Test_random_text_example(t *testing.T) {
-	value, _ := rotavator.RandomStr(rotavator.TokenChars, 30)
+	value, _ := security.RandomStr(security.TokenChars, 30)
 	fmt.Println(value)
 }

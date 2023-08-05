@@ -1,4 +1,4 @@
-package rotavator
+package web
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"rotavator/rotavator/security"
-	"rotavator/rotavator/templates"
+	"rotavator/security"
+	"rotavator/templates"
 )
 
 type AuthHandler struct {

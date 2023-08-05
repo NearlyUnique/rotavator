@@ -1,4 +1,4 @@
-package rotavator_test
+package mechanics_test
 
 import (
 	"context"
@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"rotavator/rotavator"
+	"rotavator/mechanics"
 )
 
 func Test_retry(t *testing.T) {
 	t.Run("non error case", func(t *testing.T) {
 		i := 0
-		err := rotavator.Retry(context.Background(), 3, func() error {
+		err := mechanics.Retry(context.Background(), 3, func() error {
 			i++
 			return nil
 		})
@@ -24,12 +24,12 @@ func Test_retry(t *testing.T) {
 	t.Run("error every time", func(t *testing.T) {
 		count := 0
 		failure := fmt.Errorf("fail")
-		err := rotavator.Retry(context.Background(), 3, func() error {
+		err := mechanics.Retry(context.Background(), 3, func() error {
 			count++
 			return failure
 		})
 
-		assert.IsType(t, err, rotavator.MaxAttemptsErr{})
+		assert.IsType(t, err, mechanics.MaxAttemptsErr{})
 		assert.ErrorIs(t, err, failure)
 		assert.Equal(t, 3, count)
 	})
@@ -39,7 +39,7 @@ func Test_retry(t *testing.T) {
 		count := 0
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
-		err := rotavator.Retry(ctx, 3, func() error {
+		err := mechanics.Retry(ctx, 3, func() error {
 			count++
 			i++
 			return ret[i]

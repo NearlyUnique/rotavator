@@ -1,4 +1,4 @@
-package rotavator
+package mechanics
 
 import (
 	"context"

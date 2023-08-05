@@ -1,4 +1,4 @@
-package tests
+package integration_test
 
 import (
 	"net/http/httptest"
@@ -7,13 +7,13 @@ import (
 	"github.com/NearlyUnique/httptestclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"rotavator/rotavator"
-	"rotavator/rotavator/security"
+	"rotavator/security"
+	"rotavator/web"
 )
 
 func Test_login_flow_from_cold(t *testing.T) {
 	secrets := MockCookieSecrets{}
-	routed := rotavator.SetupRoutes(secrets)
+	routed := web.SetupRoutes(secrets)
 	given := Given{
 		t:      t,
 		server: httptest.NewServer(routed),

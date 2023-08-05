@@ -1,11 +1,11 @@
-package rotavator
+package web
 
 import (
 	"fmt"
 	"net/http"
 
-	"rotavator/rotavator/security"
-	"rotavator/rotavator/templates"
+	"rotavator/security"
+	"rotavator/templates"
 )
 
 type HomeHandler struct {

@@ -4,11 +4,11 @@ import (
 	"log"
 	"os"
 
-	"rotavator/rotavator"
+	"rotavator/web"
 )
 
 func main() {
-	var app rotavator.App
+	var app web.App
 
 	if err := app.Run(); err != nil {
 		log.Printf("FATAL: %v", err)

@@ -1,11 +1,11 @@
-package rotavator
+package web
 
 import (
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
-	"rotavator/rotavator/security"
+	"rotavator/security"
 )
 
 type App struct{}
