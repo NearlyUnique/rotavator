@@ -5,7 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
-	"rotorvator/rotavator/security"
+	"rotavator/rotavator/security"
 )
 
 type App struct{}

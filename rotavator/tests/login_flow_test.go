@@ -7,8 +7,8 @@ import (
 	"github.com/NearlyUnique/httptestclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"rotorvator/rotavator"
-	"rotorvator/rotavator/security"
+	"rotavator/rotavator"
+	"rotavator/rotavator/security"
 )
 
 func Test_login_flow_from_cold(t *testing.T) {

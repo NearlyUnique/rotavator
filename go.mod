@@ -1,4 +1,4 @@
-module rotorvator
+module rotavator
 
 go 1.20
 

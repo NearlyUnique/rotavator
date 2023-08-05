@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"rotorvator/rotavator"
+	"rotavator/rotavator"
 )
 
 func Test_retry(t *testing.T) {

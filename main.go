@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"rotorvator/rotavator"
+	"rotavator/rotavator"
 )
 
 func main() {

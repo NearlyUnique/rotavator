@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"rotorvator/rotavator/security"
-	"rotorvator/rotavator/templates"
+	"rotavator/rotavator/security"
+	"rotavator/rotavator/templates"
 )
 
 type AuthHandler struct {

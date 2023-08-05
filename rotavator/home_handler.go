@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"rotorvator/rotavator/security"
-	"rotorvator/rotavator/templates"
+	"rotavator/rotavator/security"
+	"rotavator/rotavator/templates"
 )
 
 type HomeHandler struct {
