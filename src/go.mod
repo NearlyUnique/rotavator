@@ -21,12 +21,22 @@ require (
 	github.com/gobuffalo/validate/v3 v3.3.3 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/gorilla/css v1.0.0 // indirect
+	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
+	github.com/jackc/pgconn v1.14.0 // indirect
+	github.com/jackc/pgio v1.0.0 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgproto3/v2 v2.3.2 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
+	github.com/jackc/pgtype v1.14.0 // indirect
+	github.com/jackc/pgx/v4 v4.18.1 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.25 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/sourcegraph/annotate v0.0.0-20160123013949-f4cad6c6324d // indirect
 	github.com/sourcegraph/syntaxhighlight v0.0.0-20170531221838-bd320f5d308e // indirect
+	golang.org/x/crypto v0.11.0 // indirect
 	golang.org/x/net v0.13.0 // indirect
+	golang.org/x/text v0.11.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

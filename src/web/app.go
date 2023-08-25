@@ -26,15 +26,6 @@ func SetupRoutes(secureCookie security.CookieSecrets) *mux.Router {
 	r := mux.NewRouter()
 	r.Handle("/", cookies.RequireCookie(HomeHandler{}))
 	login := NewLoginHandler(cookies)
-	r.Handle("/auth/login", login.ViewLoginPage()).
-		Methods(http.MethodGet)
-	r.Handle("/auth/login", login.LoginWithRedirect()).
-		Methods(http.MethodPost)
-	r.Handle("/auth/pending", login.ViewPendingLoginPage()).
-		Methods(http.MethodGet)
-	r.Handle("/auth/token", login.TokenWithRedirect()).
-		Methods(http.MethodGet)
-	r.Handle("/auth/logout", login.LogoutWithRedirect()).
-		Methods(http.MethodPost)
+	login.SetupRoutes(r.Path("/auth").Subrouter())
 	return r
 }

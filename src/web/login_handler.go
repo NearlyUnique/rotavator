@@ -21,6 +21,19 @@ func NewLoginHandler(cookie *security.CookieCutter) AuthHandler {
 	}
 }
 
+func (h AuthHandler) SetupRoutes(r *mux.Router) {
+	r.Handle("/login", h.ViewLoginPage()).
+		Methods(http.MethodGet)
+	r.Handle("/login", h.LoginWithRedirect()).
+		Methods(http.MethodPost)
+	r.Handle("/pending", h.ViewPendingLoginPage()).
+		Methods(http.MethodGet)
+	r.Handle("/token", h.TokenWithRedirect()).
+		Methods(http.MethodGet)
+	r.Handle("/logout", h.LogoutWithRedirect()).
+		Methods(http.MethodPost)
+}
+
 func (h AuthHandler) LoginWithRedirect() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("content-type") != "application/x-www-form-urlencoded" {
