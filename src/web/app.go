@@ -1,7 +1,10 @@
 package web
 
 import (
+	"encoding/gob"
+	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
@@ -12,20 +15,32 @@ type App struct{}
 
 func (a App) Run() error {
 
-	secureCookie := securecookie.New([]byte("123456789012345678901234567890aa"), []byte("1234567890abcdef"))
+	// To store custom types in our cookies,
+	// we must first register them using gob.Register
+	gob.Register(map[string]string{})
 
-	r := SetupRoutes(secureCookie)
+	secureCookie := securecookie.New([]byte(os.Getenv("COOKIE_HASH_KEY")), []byte(os.Getenv("COOKIE_BLOCK_KEY")))
+	auth, err := security.NewAuthenticator()
+	if err != nil {
+		log.Fatalf("Failed to initialize the authenticator: %v", err)
+	}
+
+	r := SetupRoutes(secureCookie, auth)
 
 	server := http.Server{Addr: "0.0.0.0:5001", Handler: r}
 	return server.ListenAndServe()
 }
 
 // SetupRoutes as it says on the tin
-func SetupRoutes(secureCookie security.CookieSecrets) *mux.Router {
+func SetupRoutes(secureCookie security.CookieSecrets, auth *security.Authenticator) *mux.Router {
 	cookies := security.NewCookieCutter(secureCookie, "_auth", "/auth/login")
 	r := mux.NewRouter()
-	r.Handle("/", cookies.RequireCookie(HomeHandler{}))
-	login := NewLoginHandler(cookies)
-	login.SetupRoutes(r.Path("/auth").Subrouter())
+
+	login := NewLoginHandler(cookies, auth)
+	login.SetupRoutes(r.PathPrefix("/auth").Subrouter())
+
+	// cookies.RequireCookie()
+	r.Handle("/", HomeHandler{})
+
 	return r
 }

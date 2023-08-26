@@ -1,10 +1,10 @@
 package web
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 	"rotavator/security"
@@ -13,55 +13,40 @@ import (
 
 type AuthHandler struct {
 	cookie *security.CookieCutter
+	auth   *security.Authenticator
 }
 
-func NewLoginHandler(cookie *security.CookieCutter) AuthHandler {
+func NewLoginHandler(cookie *security.CookieCutter, auth *security.Authenticator) AuthHandler {
 	return AuthHandler{
 		cookie: cookie,
+		auth:   auth,
 	}
 }
 
 func (h AuthHandler) SetupRoutes(r *mux.Router) {
-	r.Handle("/login", h.ViewLoginPage()).
+	r.Handle("/login", h.GetLoginWithRedirect()).
 		Methods(http.MethodGet)
-	r.Handle("/login", h.LoginWithRedirect()).
-		Methods(http.MethodPost)
-	r.Handle("/pending", h.ViewPendingLoginPage()).
+	r.Handle("/callback", h.GetCallback()).
 		Methods(http.MethodGet)
-	r.Handle("/token", h.TokenWithRedirect()).
+	r.Handle("/user", h.GetUser()).
 		Methods(http.MethodGet)
-	r.Handle("/logout", h.LogoutWithRedirect()).
-		Methods(http.MethodPost)
 }
 
-func (h AuthHandler) LoginWithRedirect() http.Handler {
+func (h AuthHandler) GetLoginWithRedirect() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("content-type") != "application/x-www-form-urlencoded" {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		err := r.ParseForm()
-		if err != nil || r.Form.Get("email") == "" {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		token, err := h.tokenFor(r.Form.Get("email"))
+		state, err := security.GenerateRandomState()
 		if err != nil {
-			log.Printf("token creation error %v", err)
-			w.WriteHeader(http.StatusServiceUnavailable)
+			log.Printf("login GET error %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			// TO fix
 			_, _ = fmt.Fprintf(w, err.Error())
 			return
 		}
-		cookieValue := map[string]any{}
-		cookieValue["email"] = r.Form.Get("email")
-		cookieValue["locked"] = true
-		cookieValue["created"] = time.Now().Unix()
-		cookieValue["token"] = token
-
-		// add "unlock code"
-		c, err := h.cookie.MakeCookie(cookieValue)
+		cookieValue := map[string]string{
+			"state": state,
+		}
+		var c *http.Cookie
+		c, err = h.cookie.MakeCookie(cookieValue)
 		if err != nil {
 			log.Printf("login POST error %v", err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -69,70 +54,78 @@ func (h AuthHandler) LoginWithRedirect() http.Handler {
 			return
 		}
 		http.SetCookie(w, c)
-		// adding email to this redirect is temporary
-		http.Redirect(w, r, "/auth/pending", http.StatusSeeOther)
+		http.Redirect(w, r, h.auth.AuthCodeURL(state), http.StatusTemporaryRedirect)
 	})
 }
 
-func (h AuthHandler) LogoutWithRedirect() http.Handler {
+func (h AuthHandler) GetCallback() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		//cookieValue := map[string]string{}
-		//c, err := h.cookie.MakeCookie(cookieValue)
-		//if err != nil {
-		//	log.Printf("logout POST error %v", err)
-		//	w.WriteHeader(http.StatusBadRequest)
-		//	_, _ = fmt.Fprintf(w, err.Error())
-		//	return
-		//}
-		//http.SetCookie(w, c)
-		//http.Redirect(w, r, "/", http.StatusSeeOther)
-		w.WriteHeader(http.StatusInternalServerError)
-	})
-}
-func (h AuthHandler) ViewLoginPage() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		s := templates.RenderPage("login.html", map[string]any{
-			"title": "Login",
-			"token": "random-token",
-		})
-		w.WriteHeader(http.StatusOK)
-		_, _ = fmt.Fprintf(w, s)
-	})
-}
+		cookieValue := h.cookie.GetAuthCookie(r)
+		queryValue := r.URL.Query().Get("state")
 
-func (h AuthHandler) ViewPendingLoginPage() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tokenCookie, err := r.Cookie("_auth")
-		if err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
-		}
-		http.SetCookie(w, tokenCookie)
-		s := templates.RenderPage("login_pending.html", map[string]any{
-			"title": "Login Email Sent",
-		})
-		w.WriteHeader(http.StatusOK)
-		_, _ = fmt.Fprintf(w, s)
-	})
-}
-func (h AuthHandler) TokenWithRedirect() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookieValue := map[string]string{}
-		vars := mux.Vars(r)
-		cookieValue["email"] = vars["token"]
-		cookieValue["created"] = time.Now().String()
-		c, err := h.cookie.MakeCookie(cookieValue)
-		if err != nil {
-			log.Printf("login POST error %v", err)
+		if cookieValue["state"] != queryValue {
+			log.Printf("bad state '%s'!='%s'", queryValue, cookieValue)
 			w.WriteHeader(http.StatusBadRequest)
+			_, _ = fmt.Fprintf(w, "bad state")
+			return
+		}
+		token, err := h.auth.Exchange(r.Context(), r.URL.Query().Get("code"))
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = fmt.Fprintf(w, "Failed to convert an authorization code into a token.")
+			return
+		}
+		idToken, err := h.auth.VerifyIDToken(r.Context(), token)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = fmt.Fprintf(w, "Failed to verify ID Token.")
+			return
+		}
+
+		var profile map[string]any
+		if err := idToken.Claims(&profile); err != nil {
+			log.Printf("login Claims error %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = fmt.Fprintf(w, err.Error())
+			return
+		}
+		cookieValue["access_token"] = token.AccessToken
+		j, _ := json.Marshal(profile)
+		cookieValue["profile"] = string(j)
+		// Redirect to logged in page.
+		var c *http.Cookie
+		c, err = h.cookie.MakeCookie(cookieValue)
+		if err != nil {
+			log.Printf("callback make cookie error %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
 			_, _ = fmt.Fprintf(w, err.Error())
 			return
 		}
 		http.SetCookie(w, c)
-		w.WriteHeader(http.StatusOK)
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, "/auth/user", http.StatusTemporaryRedirect)
 	})
 }
 
-func (h AuthHandler) tokenFor(email string) (string, error) {
-	return email, nil
+func (h AuthHandler) GetUser() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookieValues := h.cookie.GetAuthCookie(r)
+		var profile map[string]any
+		log.Print(cookieValues["profile"])
+		err := json.Unmarshal([]byte(cookieValues["profile"]), &profile)
+		if err != nil {
+			log.Printf("json %v", err)
+		}
+		//rCtx := security.CookieContext(r.Context())
+		s := templates.RenderPage("user.html", map[string]any{
+			"title":    "User",
+			"email":    profile["email"],
+			"picture":  profile["picture"],
+			"name":     profile["name"],
+			"nickname": profile["nickname"],
+			"nextDuty": "1 Oct 2023",
+			"prevDuty": "1 Jan 2023",
+		})
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprintf(w, s)
+	})
 }

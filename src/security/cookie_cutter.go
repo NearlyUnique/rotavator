@@ -57,7 +57,7 @@ func CookieContext(ctx context.Context) map[string]string {
 }
 
 // MakeCookie to the response
-func (c CookieCutter) MakeCookie(value any) (*http.Cookie, error) {
+func (c CookieCutter) MakeCookie(value map[string]string) (*http.Cookie, error) {
 	encoded, err := c.cutter.Encode(c.cookieName, value)
 	if err == nil {
 		return &http.Cookie{
@@ -86,4 +86,23 @@ func (c CookieCutter) RequireCookie(h http.Handler) http.Handler {
 		// not authenticated
 		http.Redirect(w, r, c.redirectUrl, http.StatusSeeOther)
 	})
+}
+
+func (c CookieCutter) GetAuthCookie(r *http.Request) map[string]string {
+	value := make(map[string]string)
+	cookie, err := r.Cookie(c.cookieName)
+	if err != nil {
+		value["error"] = err.Error()
+		return value
+	}
+	err = c.cutter.Decode(c.cookieName, cookie.Value, &value)
+	if err != nil {
+		value["error"] = err.Error()
+		return value
+	}
+	if len(value) == 0 {
+		value["error"] = "zero length after decode"
+		return value
+	}
+	return value
 }

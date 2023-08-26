@@ -13,7 +13,7 @@ import (
 
 func Test_login_flow_from_cold(t *testing.T) {
 	secrets := MockCookieSecrets{}
-	routed := web.SetupRoutes(secrets)
+	routed := web.SetupRoutes(secrets, nil)
 	given := Given{
 		t:      t,
 		server: httptest.NewServer(routed),

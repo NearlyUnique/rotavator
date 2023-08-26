@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/joho/godotenv"
 	"rotavator/migrate"
 	"rotavator/web"
 )
@@ -23,6 +24,9 @@ func main() {
 	case "update":
 		migrate.Update()
 		return
+	}
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("Failed to load the env vars: %v", err)
 	}
 
 	if err := app.Run(); err != nil {
