@@ -2,6 +2,7 @@ package security
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -47,17 +48,17 @@ func NewCookieCutter(secureCookie CookieSecrets, cookieName, redirectUrl string)
 }
 
 // CookieContext extracts the secure cookie data
-func CookieContext(ctx context.Context) map[string]string {
+func CookieContext(ctx context.Context) Profile {
 	rCtx := ctx.Value(ctxKey)
-	v, ok := rCtx.(map[string]string)
-	if !ok || v == nil {
-		return map[string]string{}
+	profile, ok := rCtx.(Profile)
+	if !ok {
+		return Profile{}
 	}
-	return v
+	return profile
 }
 
 // MakeCookie to the response
-func (c CookieCutter) MakeCookie(value map[string]string) (*http.Cookie, error) {
+func (c CookieCutter) MakeCookie(value Profile) (*http.Cookie, error) {
 	encoded, err := c.cutter.Encode(c.cookieName, value)
 	if err == nil {
 		return &http.Cookie{
@@ -72,37 +73,41 @@ func (c CookieCutter) MakeCookie(value map[string]string) (*http.Cookie, error) 
 }
 
 // RequireCookie decode cookie, put's it in the context. Requires a cookie or returns
-func (c CookieCutter) RequireCookie(h http.Handler) http.Handler {
+func (c CookieCutter) RequireCookie(h http.Handler, requiredState ProfileState) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if cookie, err := r.Cookie(c.cookieName); err == nil {
-			value := make(map[string]string)
-			if err = c.cutter.Decode(c.cookieName, cookie.Value, &value); err == nil && len(value) > 0 {
-				ctx := context.WithValue(r.Context(), ctxKey, value)
-				r = r.WithContext(ctx)
-				h.ServeHTTP(w, r)
-				return
-			}
+		profile, err := c.GetProfileCookie(r)
+		if err != nil {
+			http.Redirect(w, r, c.redirectUrl, http.StatusSeeOther)
+			return
 		}
-		// not authenticated
-		http.Redirect(w, r, c.redirectUrl, http.StatusSeeOther)
+		if requiredState != ProfileStateAny && profile.State() != requiredState {
+			// log error?
+			http.Redirect(w, r, c.redirectUrl, http.StatusSeeOther)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), ctxKey, profile)
+		r = r.WithContext(ctx)
+		h.ServeHTTP(w, r)
 	})
 }
 
-func (c CookieCutter) GetAuthCookie(r *http.Request) map[string]string {
-	value := make(map[string]string)
+func (c CookieCutter) GetProfileCookie(r *http.Request) (Profile, error) {
 	cookie, err := r.Cookie(c.cookieName)
+	if errors.Is(err, http.ErrNoCookie) {
+		// that's fine, no profile
+		return Profile{}, nil
+	}
 	if err != nil {
-		value["error"] = err.Error()
-		return value
+		return Profile{}, err
 	}
-	err = c.cutter.Decode(c.cookieName, cookie.Value, &value)
+	var p Profile
+	err = c.cutter.Decode(c.cookieName, cookie.Value, &p)
 	if err != nil {
-		value["error"] = err.Error()
-		return value
+		return Profile{}, err
 	}
-	if len(value) == 0 {
-		value["error"] = "zero length after decode"
-		return value
+	if len(p.Email) == 0 && len(p.AuthState) == 0 {
+		return Profile{}, fmt.Errorf("zero length after decode")
 	}
-	return value
+	return p, nil
 }

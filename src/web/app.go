@@ -17,7 +17,7 @@ func (a App) Run() error {
 
 	// To store custom types in our cookies,
 	// we must first register them using gob.Register
-	gob.Register(map[string]string{})
+	gob.Register(security.Profile{})
 
 	secureCookie := securecookie.New([]byte(os.Getenv("COOKIE_HASH_KEY")), []byte(os.Getenv("COOKIE_BLOCK_KEY")))
 	auth, err := security.NewAuthenticator()
@@ -33,14 +33,14 @@ func (a App) Run() error {
 
 // SetupRoutes as it says on the tin
 func SetupRoutes(secureCookie security.CookieSecrets, auth *security.Authenticator) *mux.Router {
-	cookies := security.NewCookieCutter(secureCookie, "_auth", "/auth/login")
+	cookies := security.NewCookieCutter(secureCookie, "_auth", "/")
 	r := mux.NewRouter()
 
 	login := NewLoginHandler(cookies, auth)
 	login.SetupRoutes(r.PathPrefix("/auth").Subrouter())
 
-	// cookies.RequireCookie()
-	r.Handle("/", HomeHandler{})
+	home := NewHomeHandler(cookies)
+	r.Handle("/", cookies.RequireCookie(home, security.ProfileStateAny))
 
 	return r
 }

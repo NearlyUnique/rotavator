@@ -1,7 +1,6 @@
 package web
 
 import (
-	"fmt"
 	"net/http"
 
 	"rotavator/security"
@@ -9,19 +8,25 @@ import (
 )
 
 type HomeHandler struct {
+	cookie *security.CookieCutter
+}
+
+func NewHomeHandler(cookie *security.CookieCutter) HomeHandler {
+	return HomeHandler{cookie: cookie}
 }
 
 // HomeHandler main user info
 func (h HomeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	//vars := mux.Vars(r)
-	rCtx := security.CookieContext(r.Context())
-	s := templates.RenderPage("home.html", map[string]any{
-		"title":    "Home",
-		"email":    rCtx["email"],
-		"name":     "Bob Smith",
-		"nextDuty": "1 Oct 2023",
-		"prevDuty": "1 Jan 2023",
-	})
-	w.WriteHeader(http.StatusOK)
-	_, _ = fmt.Fprintf(w, s)
+	profile := security.CookieContext(r.Context())
+	if !profile.IsLoggedIn() {
+		_, _ = w.Write([]byte(templates.RenderPage("not_logged_in.html", map[string]any{
+			"title": "Home",
+		})))
+		return
+	}
+	_, _ = w.Write([]byte(templates.RenderPage("home.html", map[string]any{
+		"title":      "Home",
+		"nickname":   profile.Nickname,
+		"pictureURL": profile.PictureURL,
+	})))
 }
